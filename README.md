@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌍 EcoVista — Real-time India Travel Intelligence & AI Trip Planner
 
-## Getting Started
+EcoVista combines the visual discovery of Airbnb, the breadth of Google Travel,
+the precision of a live data dashboard, and an integrated AI trip builder into a
+single responsive web app — built initially for **India** with a scalable
+worldwide foundation.
 
-First, run the development server:
+## ✨ Features
+
+- **Live Weather Telemetry** — 15-min cached temperature, RealFeel, humidity,
+  wind, rain probability, AQI & UV per destination (Open-Meteo, no API key),
+  with graceful seasonal-average fallback + "Updated X min ago" status.
+- **Procedural Weather Canvas** — GPU-friendly HTML5 Canvas atmospheric graphics:
+  drifting snow, monsoon rain with splash, multi-layer Perlin fog, and a
+  sun/moon solar-cycle sky synced to the destination's local hour.
+- **"What Can I Do Right Now?"** — rule-based engine that fuses current month +
+  live weather to recommend active/caution/advisory activities (e.g. Gulmarg
+  skiing in Dec–Feb, Munnar tea tours in monsoon).
+- **Interactive India Map** — Leaflet + OpenStreetMap/CartoDB/OpenTopoMap tile
+  switching, GeoJSON state overlays, live weather pins, flyTo animations and
+  itinerary polyline routing.
+- **AI Trip Planner** — NVIDIA LLM-driven destination chat + a structured,
+  weather-aware multi-day itinerary builder with drag-to-reorder days,
+  one-click activity swaps, itemized budget estimates, and route mapping.
+- **Explore / Search Hub** — natural-language queries
+  ("snow places in December", "family monsoon destinations"), multi-attribute
+  filtering by state/terrain/season, and a side-by-side destination comparison.
+- **World-ready schema** — World › Countries › Regions › Destinations with
+  activities, attractions, seasonal profiles, media, weather cache and
+  user-saved trips, all under **Row Level Security**.
+
+## 🧱 Tech Stack
+
+| Layer       | Technology                                        |
+|-------------|---------------------------------------------------|
+| Framework   | Next.js 16 (App Router), TypeScript, Tailwind CSS |
+| UI          | Lucide Icons, Framer Motion-ready                 |
+| Backend/DB  | Supabase (PostgreSQL, Auth, RLS, Realtime)        |
+| Maps        | Leaflet / React-Leaflet (OpenStreetMap & CartoDB) |
+| Weather     | Open-Meteo (free) with server-side caching        |
+| AI Engine   | NVIDIA NIM (OpenAI-compatible chat completions)   |
+
+## 🚀 Getting Started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # fill in your Supabase + NVIDIA keys
+npm run dev                  # → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables (`.env.local`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```ini
+NEXT_PUBLIC_SUPABASE_URL=https://vxwujqafskzhmlxvyfuu.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...          # Supabase dashboard → Settings → API
+SUPABASE_SERVICE_ROLE_KEY=eyJ...              # server-only, for /api/sync & /api/weather
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+AI_API_KEY=nvapi-...                          # NVIDIA API key
+AI_BASE_URL=https://integrate.api.nvidia.com/v1
+AI_MODEL=nvidia/nemotron-3-super-120b-a12b
+```
 
-## Learn More
+## 🗄️ Database
 
-To learn more about Next.js, take a look at the following resources:
+Migrations live in [`supabase/migrations/`](supabase/migrations/). To apply:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+supabase login
+supabase link --project-ref vxwujqafskzhmlxvyfuu
+supabase db push
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app reads destinations/activities/attractions/seasonal data **live from
+Supabase** with an in-memory cache, automatically falling back to the bundled
+catalog if Supabase isn't reachable. To seed the DB from the catalog:
 
-## Deploy on Vercel
+```bash
+curl -X POST http://localhost:3000/api/sync
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Data model
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+World
+ └── Countries (code, name, currency, continent)
+      └── Regions_States (country_id, name, type, capital)
+           └── Destinations (state_id, name, slug, geo, altitude, terrain)
+                ├── Weather_Cache       (destination_id, temp, aqi, …, 15-min TTL)
+                ├── Seasonal_Profiles   (destination_id, month, crowd, budget)
+                ├── Activities          (destination_id, name, weather_required, cost)
+                ├── Attractions_POI     (destination_id, name, coords, entry_fee)
+                └── Destination_Media   (destination_id, url, caption, seasonal_tag)
+User Trips ── Itinerary Days (day slots, notes, cost breakdowns)
+```
+
+## 📁 Project Structure
+
+```
+src/
+  app/                 # App Router pages
+    api/               # weather, ai, traveltime, destinations, sync routes
+    explore/           # Explore India hub + compare
+    map/               # full-screen interactive map
+    planner/           # AI trip planner
+    search/            # natural-language search + AI concierge
+    trips/             # saved trips (Supabase)
+    auth/              # Supabase Auth
+    india/[state]/[destination]/  # destination detail pages
+  components/
+    map/               # Leaflet InteractiveMap + client MapView
+    weather/           # Canvas visualizer + telemetry panel
+    planner/           # TripPlanner workspace
+    ...                # cards, gallery, season matrix, compare, search
+  hooks/               # useWeather, useLiveDestinations
+  lib/
+    data/              # bundled catalog (fallback) + India GeoJSON
+    supabase/          # client/server/data repository
+    planner.ts         # itinerary generation engine
+    intelligence.ts    # "What can I do right now" engine
+    weather.ts         # weather fetch + fallback
+    travel.ts          # routing / haversine / OSRM
+supabase/migrations/   # schema + RLS + seed
+```
+
+## 🔒 Security & Scale
+
+- Row Level Security enabled on every table (reference data is public read;
+  trips are private per-user via `auth.uid()`).
+- `.env.local` (with secrets) is git-ignored; only `.env.example` is committed.
+- Server-side weather caching (15-min TTL) + dead-letter fallback to seasonal
+  averages keeps external API usage minimal and the dashboard always live.
