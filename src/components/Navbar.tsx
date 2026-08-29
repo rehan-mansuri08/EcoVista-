@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mountain, Search, Sparkles, Map as MapIcon, Compass } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { ProfileMenu } from "./ProfileMenu";
 
 const links = [
   { href: "/explore", label: "Explore", icon: Compass },
@@ -60,6 +61,7 @@ export function Navbar() {
             <span className="sm:hidden">Plan</span>
             <span className="hidden sm:inline">AI Plan Trip</span>
           </Link>
+          <ProfileMenu />
           <div className="ml-1 sm:hidden">
             <ThemeToggle />
           </div>
