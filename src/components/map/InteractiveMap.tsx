@@ -7,7 +7,7 @@ import type { Destination, GeoPoint } from "@/types";
 import { indiaStatesGeoJSON } from "@/lib/data/india-states";
 import { useWeather } from "@/hooks/useWeather";
 
-export type TileId = "light" | "dark" | "terrain";
+export type TileId = "light" | "dark" | "terrain" | "satellite";
 
 const TILES: Record<TileId, { url: string; attribution: string; label: string }> = {
   light: {
@@ -24,6 +24,11 @@ const TILES: Record<TileId, { url: string; attribution: string; label: string }>
     url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
     label: "Terrain",
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+    label: "Satellite",
   },
 };
 
