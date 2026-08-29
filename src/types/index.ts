@@ -107,6 +107,63 @@ export interface WeatherData {
   }[];
 }
 
+export interface TransitLeg {
+  label: string;
+  mode: "flight" | "train" | "car" | "bus";
+  amount: number;
+}
+
+export interface StayLine {
+  destinationId: string;
+  name: string;
+  nights: number;
+  ratePerNight: number;
+  amount: number;
+}
+
+export interface ActivityLine {
+  title: string;
+  day: number;
+  location: string;
+  amount: number;
+}
+
+export interface MiscLine {
+  label: string;
+  amount: number;
+}
+
+export interface DayBudget {
+  day: number;
+  date: string;
+  destination: string;
+  stay: number;
+  food: number;
+  activities: number;
+  misc: number;
+  total: number;
+}
+
+export interface DetailedBudget {
+  currency: "INR";
+  partySize: number;
+  days: number;
+  perHeadTotal: number;
+  transitLegs: TransitLeg[];
+  stayLines: StayLine[];
+  activityLines: ActivityLine[];
+  miscLines: MiscLine[];
+  perDay: DayBudget[];
+  totalPerDay: number;
+  // flat totals (kept for backward compatibility)
+  transit: number;
+  stay: number;
+  food: number;
+  activities: number;
+  misc: number;
+  total: number;
+}
+
 export interface ItineraryDay {
   date: string;
   title: string;
@@ -137,13 +194,7 @@ export interface UserTrip {
   interests: string[];
   status: "draft" | "planned";
   days: ItineraryDay[];
-  costBreakdown: {
-    transit: number;
-    stay: number;
-    food: number;
-    activities: number;
-    total: number;
-  };
+  costBreakdown: DetailedBudget;
   shareToken?: string;
   createdAt: string;
   updatedAt: string;

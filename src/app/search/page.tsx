@@ -1,17 +1,30 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useLiveDestinations } from "@/hooks/useLiveDestinations";
 import { DestinationCard } from "@/components/DestinationCard";
 import { SearchBar } from "@/components/SearchBar";
-import { Sparkles, Loader2, Database } from "lucide-react";
+import { Sparkles, Loader2, Database, ArrowRight } from "lucide-react";
+
+interface AIMatch {
+  id: string;
+  name: string;
+  slug: string;
+  state: string;
+  tagline: string;
+  image: string;
+  terrainType: string;
+  reasons: string[];
+}
 
 function SearchInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const { destinations, liveSource, syncing } = useLiveDestinations();
   const [aiReply, setAiReply] = useState<string | null>(null);
+  const [matches, setMatches] = useState<AIMatch[]>([]);
   const [loadingAi, setLoadingAi] = useState(false);
 
   const filtered = destinations.filter((d) => {
@@ -34,9 +47,14 @@ function SearchInner() {
       });
       const data = await res.json();
       setAiReply(data.reply || "No response.");
+      setMatches(data.matches || []);
     } finally {
       setLoadingAi(false);
     }
+  };
+
+  const planThis = (slug: string) => {
+    router.push(`/planner?d=${slug}`);
   };
 
   return (
@@ -55,11 +73,43 @@ function SearchInner() {
       <SearchBar />
 
       {query && (
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="mb-3 flex items-center gap-2 text-zinc-400">
             <span>Results for</span>
             <span className="font-semibold text-emerald-300">“{query}”</span>
           </div>
+
+          {matches.length > 0 && (
+            <div className="mb-5">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-emerald-300">
+                <Sparkles className="h-4 w-4" /> AI Recommended matches
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {matches.map((m) => (
+                  <div key={m.id} className="glass relative overflow-hidden rounded-2xl">
+                    <div
+                      className="h-28 w-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(${m.image})` }}
+                    />
+                    <div className="p-3">
+                      <div className="font-bold">{m.name}</div>
+                      <div className="text-[11px] text-zinc-500">{m.state}</div>
+                      {m.reasons.length > 0 && (
+                        <div className="mt-1 text-[11px] text-sky-300">✦ {m.reasons.join(" · ")}</div>
+                      )}
+                      <button
+                        onClick={() => planThis(m.slug)}
+                        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-400 to-sky-500 px-3 py-1.5 text-xs font-bold text-black transition hover:brightness-110"
+                      >
+                        Plan this trip <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <button
             onClick={runAI}
             disabled={loadingAi}

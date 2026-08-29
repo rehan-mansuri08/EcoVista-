@@ -81,20 +81,50 @@ function TripPlannerInner() {
 
   const buildTrip = async () => {
     setStep("building");
-    // simulate AI thinking briefly then generate
-    await new Promise((r) => setTimeout(r, 1100));
+    await new Promise((r) => setTimeout(r, 900));
+    const destIds = form.destinationIds.length
+      ? form.destinationIds
+      : ["goa"];
+
+    // Gather live weather for each destination so planning is weather-aware.
+    const weatherMap: Record<string, { conditions: string }> = {};
+    try {
+      await Promise.all(
+        destIds.map(async (id) => {
+          const dest = destinations.find((d) => d.id === id);
+          if (!dest) return;
+          const res = await fetch(
+            `/api/weather?lat=${dest.coordinates.lat}&lng=${dest.coordinates.lng}`
+          );
+          if (res.ok) {
+            const w = await res.json();
+            weatherMap[id] = { conditions: w?.conditions || "clear" };
+          }
+        })
+      );
+    } catch {
+      // non-fatal: fall back to rule-based selection
+    }
+
     const result = generateItinerary({
       origin: form.origin || "Delhi",
       startDate: form.startDate || new Date().toISOString().split("T")[0],
-      endDate: form.endDate || new Date().toISOString().split("T")[0],
+      endDate:
+        form.endDate ||
+        new Date(
+          new Date().getTime() + 3 * 24 * 60 * 60 * 1000
+        )
+          .toISOString()
+          .split("T")[0],
       partyType: form.partyType,
       budgetTier: form.budgetTier,
       pacing: form.pacing,
       interests: form.interests,
-      destinationIds: form.destinationIds.length ? form.destinationIds : ["goa"],
+      destinationIds: destIds,
+      weather: weatherMap,
     });
 
-    const tripDestinations = form.destinationIds
+    const tripDestinations = destIds
       .map((id) => destinations.find((d) => d.id === id)?.name || "")
       .filter(Boolean);
 
@@ -102,7 +132,7 @@ function TripPlannerInner() {
       id: `local-${Date.now()}`,
       title: `${tripDestinations.join(" & ") || "My Trip"} — ${result.days.length} days`,
       origin: form.origin || "Delhi",
-      destinationIds: form.destinationIds,
+      destinationIds: destIds,
       destinations: tripDestinations,
       startDate: form.startDate || "",
       endDate: form.endDate || "",
@@ -226,6 +256,23 @@ function TripPlannerInner() {
   }, [trip]);
 
   // ---- RENDER ----
+  if (step === "building") {
+    return (
+      <div className="mx-auto flex max-w-7xl flex-1 flex-col items-center justify-center px-4 py-24 sm:px-6">
+        <div className="relative grid h-20 w-20 place-items-center">
+          <div className="absolute inset-0 animate-ping rounded-full bg-emerald-400/20" />
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-emerald-400 to-sky-500 text-black shadow-2xl shadow-emerald-500/30">
+            <Sparkles className="h-8 w-8 animate-pulse" />
+          </div>
+        </div>
+        <h2 className="mt-6 text-2xl font-bold">Crafting your itinerary…</h2>
+        <p className="mt-2 flex items-center gap-2 text-sm text-zinc-400">
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking live weather & balancing your budget
+        </p>
+      </div>
+    );
+  }
+
   if (step !== "result") {
     return (
       <div className="mx-auto max-w-7xl flex-1 px-4 py-10 sm:px-6">
@@ -497,25 +544,106 @@ function TripPlannerInner() {
             height="320px"
           />
           <div className="glass rounded-2xl p-5">
-            <h3 className="mb-4 text-lg font-bold">Budget Estimator</h3>
+            <h3 className="mb-1 text-lg font-bold">Detailed Budget</h3>
+            <p className="mb-4 text-xs text-zinc-400">
+              {trip?.costBreakdown.currency} · {trip?.costBreakdown.days} days · Party of {trip?.costBreakdown.partySize} · Per-head ₹{trip?.costBreakdown.perHeadTotal.toLocaleString("en-IN")}
+            </p>
             {trip && (
-              <div className="space-y-2 text-sm">
-                {[
-                  ["Transit", trip.costBreakdown.transit],
-                  ["Stay", trip.costBreakdown.stay],
-                  ["Food", trip.costBreakdown.food],
-                  ["Activities", trip.costBreakdown.activities],
-                ].map(([label, val]) => (
-                  <div key={label as string} className="flex justify-between border-b border-white/5 pb-1.5">
-                    <span className="text-zinc-400">{label}</span>
-                    <span className="font-medium">₹{(val as number).toLocaleString("en-IN")}</span>
+              <>
+                {/* Category summary with bars */}
+                <div className="space-y-2.5 text-sm">
+                  {(
+                    [
+                      ["Transit", trip.costBreakdown.transit, "bg-sky-400"],
+                      ["Stay", trip.costBreakdown.stay, "bg-violet-400"],
+                      ["Food", trip.costBreakdown.food, "bg-emerald-400"],
+                      ["Activities", trip.costBreakdown.activities, "bg-amber-400"],
+                      ["Misc", trip.costBreakdown.misc, "bg-rose-400"],
+                    ] as const
+                  ).map(([label, val, color]) => {
+                    const pct = Math.round((val / Math.max(1, trip.costBreakdown.total)) * 100);
+                    return (
+                      <div key={label}>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">{label}</span>
+                          <span className="font-medium">₹{val.toLocaleString("en-IN")} <span className="text-zinc-500">({pct}%)</span></span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                          <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between pt-2 text-base font-bold">
+                    <span>Total</span>
+                    <span className="text-emerald-300">₹{trip.costBreakdown.total.toLocaleString("en-IN")}</span>
                   </div>
-                ))}
-                <div className="flex justify-between pt-2 text-base font-bold">
-                  <span>Total</span>
-                  <span className="text-emerald-300">₹{trip.costBreakdown.total.toLocaleString("en-IN")}</span>
                 </div>
-              </div>
+
+                {/* Transit legs */}
+                <div className="mt-5">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Transit</h4>
+                  <div className="space-y-1.5">
+                    {trip.costBreakdown.transitLegs.map((leg, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-zinc-400">{leg.label}</span>
+                        <span className="font-medium">₹{leg.amount.toLocaleString("en-IN")}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between border-t border-white/5 pt-1.5 text-xs font-semibold">
+                      <span>Transit total</span>
+                      <span>₹{trip.costBreakdown.transit.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stay per destination */}
+                <div className="mt-5">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Stay</h4>
+                  <div className="space-y-1.5">
+                    {trip.costBreakdown.stayLines.map((s, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-zinc-400">{s.name} · {s.nights} night{s.nights > 1 ? "s" : ""} × ₹{(s.ratePerNight).toLocaleString("en-IN")}</span>
+                        <span className="font-medium">₹{s.amount.toLocaleString("en-IN")}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between border-t border-white/5 pt-1.5 text-xs font-semibold">
+                      <span>Stay total</span>
+                      <span>₹{trip.costBreakdown.stay.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Misc */}
+                <div className="mt-5">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Other costs</h4>
+                  <div className="space-y-1.5">
+                    {trip.costBreakdown.miscLines.map((m, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-zinc-400">{m.label}</span>
+                        <span className="font-medium">₹{m.amount.toLocaleString("en-IN")}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Per-day table */}
+                <div className="mt-5">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Day-by-day</h4>
+                  <div className="max-h-44 space-y-1 overflow-y-auto pr-1">
+                    {trip.costBreakdown.perDay.map((d) => (
+                      <div key={d.day} className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">Day {d.day} · {d.destination}</span>
+                        <span className="font-medium">₹{d.total.toLocaleString("en-IN")}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-1.5 flex justify-between border-t border-white/5 pt-1.5 text-xs font-semibold">
+                    <span>Budgeted total</span>
+                    <span>₹{trip.costBreakdown.totalPerDay.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+              </>
             )}
           </div>
           <div className="glass rounded-2xl p-4 text-xs text-zinc-400">
