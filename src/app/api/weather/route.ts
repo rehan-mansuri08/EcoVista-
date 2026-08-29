@@ -3,7 +3,7 @@ import { fetchLiveWeather, WEATHER_CACHE_TTL } from "@/lib/weather";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { destinations as staticDestinations } from "@/lib/data/destinations";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
