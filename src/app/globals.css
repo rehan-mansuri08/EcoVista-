@@ -11,6 +11,17 @@
   --border: rgba(255, 255, 255, 0.09);
 }
 
+html.light {
+  --background: #f5f7fb;
+  --foreground: #1a2234;
+  --primary: #16a34a;
+  --primary-soft: #22c55e;
+  --accent: #0284c7;
+  --surface: #ffffff;
+  --surface-2: #eef1f7;
+  --border: rgba(15, 23, 42, 0.1);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -31,21 +42,26 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.14), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(74, 222, 128, 0.08), transparent);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.1), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(74, 222, 128, 0.07), transparent);
   background-attachment: fixed;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
   backdrop-filter: blur(14px);
   border: 1px solid var(--border);
 }
 
 .glass-strong {
-  background: rgba(13, 19, 34, 0.72);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
 }
 
 .text-gradient {
@@ -56,9 +72,58 @@ body {
   color: transparent;
 }
 
-/* Leaflet overrides for dark theme */
+/* ------------------------------------------------------------------
+   Light mode: remap the app's dark-first utility usage so the same
+   components read correctly on a light background without rewriting
+   every component. These are grouped by the classes the UI actually
+   uses (text-zinc-*, text-white, bg-white/*, border-white/*).
+------------------------------------------------------------------ */
+html.light {
+  --tw-invert-washed: invert;
+}
+
+html.light .text-white,
+html.light .hover\:text-white:hover,
+html.light .text-zinc-100 {
+  color: #1a2234;
+}
+html.light .text-zinc-200 { color: #334155; }
+html.light .text-zinc-300 { color: #475569; }
+html.light .text-zinc-400 { color: #64748b; }
+html.light .text-zinc-500 { color: #94a3b8; }
+html.light .text-zinc-600 { color: #b6c2d4; }
+html.light .placeholder\:text-zinc-500::placeholder { color: #94a3b8; }
+
+html.light .bg-white\/5 { background: rgba(15, 23, 42, 0.045); }
+html.light .bg-white\/10 { background: rgba(15, 23, 42, 0.08); }
+html.light .hover\:bg-white\/5:hover,
+html.light .hover\:bg-white\/10:hover,
+html.light .hover\:bg-white\/\(--\):hover { background: rgba(15, 23, 42, 0.08); }
+html.light .border-white\/5 { border-color: rgba(15, 23, 42, 0.08); }
+html.light .border-white\/10 { border-color: rgba(15, 23, 42, 0.1); }
+
+html.light .ring-white\/10 { --tw-ring-color: rgba(15, 23, 42, 0.1); }
+html.light .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(15, 23, 42, 0.1);
+}
+html.light .shadow-emerald-500\/20 { box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.18), 0 4px 6px -2px rgba(5, 150, 105, 0.1); }
+
+html.light .skeleton {
+  background: linear-gradient(90deg, rgba(15,23,42,0.06) 25%, rgba(15,23,42,0.12) 50%, rgba(15,23,42,0.06) 75%);
+  background-size: 1000px 100%;
+}
+
+html.light .text-gradient {
+  background: linear-gradient(120deg, #16a34a, #0284c7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
+/* Leaflet overrides */
 .leaflet-container {
-  background: #0d1322;
+  background: var(--surface-2);
   font-family: inherit;
 }
 .leaflet-popup-content-wrapper,
@@ -76,11 +141,11 @@ body {
   border-color: var(--border);
 }
 .leaflet-control-attribution {
-  background: rgba(6, 8, 15, 0.8) !important;
-  color: #8b93a7 !important;
+  background: color-mix(in srgb, var(--background) 85%, transparent) !important;
+  color: color-mix(in srgb, var(--foreground) 55%, transparent) !important;
 }
 .leaflet-control-attribution a {
-  color: #38bdf8 !important;
+  color: var(--accent) !important;
 }
 
 /* Custom scrollbar */
@@ -92,11 +157,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--foreground) 16%, transparent);
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
 }
 
 .no-scrollbar::-webkit-scrollbar {

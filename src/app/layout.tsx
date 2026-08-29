@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { Navbar } from "@/components/Navbar";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,17 @@ export const metadata: Metadata = {
   ],
 };
 
+const themeScript = `
+  (function () {
+    try {
+      var stored = localStorage.getItem('ecovista-theme');
+      var prefers = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      var t = stored === 'dark' || stored === 'light' ? stored : (prefers ? 'light' : 'dark');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -38,9 +50,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex flex-col">{children}</main>
+        <ThemeProvider>
+          <Navbar />
+          <main className="flex-1 flex flex-col">{children}</main>
+        </ThemeProvider>
       </body>
     </html>
   );
