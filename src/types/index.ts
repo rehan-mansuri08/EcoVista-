@@ -198,4 +198,5 @@ export interface UserTrip {
   shareToken?: string;
   createdAt: string;
   updatedAt: string;
+  sharedWith: string[]; // emails of collaborators
 }

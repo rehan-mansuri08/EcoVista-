@@ -143,6 +143,7 @@ function TripPlannerInner() {
       status: "draft",
       days: result.days,
       costBreakdown: result.costBreakdown,
+      sharedWith: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
