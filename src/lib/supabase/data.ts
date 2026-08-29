@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   destinations as staticDestinations,
   getDestinationBySlug as staticGetBySlug,
@@ -102,7 +102,11 @@ async function loadFromSupabase(): Promise<boolean> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.startsWith("ey")) return false; // placeholder
 
   try {
-    const supabase = await createClient();
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
     const [destRes, actRes, attRes, seaRes] = await Promise.all([
       supabase.from("destinations").select("*"),
       supabase.from("activities").select("*"),
