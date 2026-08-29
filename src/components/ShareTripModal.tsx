@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User, Mail, LogOut } from "lucide-react";
@@ -11,6 +11,15 @@ export function ShareTripModal({ tripId }: { tripId: string }) {
   const [email, setEmail] = useState("");
   const [sharers, setSharers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Load existing sharers from Supabase on mount
+  useEffect(() => {
+    supabase.from("user_trips").select("shared_with").eq("id", tripId).then((res) => {
+      if (res.data && res.data.length > 0) {
+        setSharers(res.data[0].shared_with || []);
+      }
+    });
+  }, [tripId]);
 
   const addSharer = () => {
     if (!email) return;
