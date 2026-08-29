@@ -25,6 +25,7 @@ import { destinations } from "@/lib/data/destinations";
 import type { BudgetTier, ItineraryDay, UserTrip } from "@/types";
 import { generateItinerary, getSwapCandidates } from "@/lib/planner";
 import InteractiveMap from "@/components/map/MapView";
+import { ShareTripModal } from "@/components/ShareTripModal";
 import { createClient } from "@/lib/supabase/client";
 
 const interests = ["Nature", "Heritage", "Food", "Adventure", "Spiritual"];
@@ -43,6 +44,8 @@ function TripPlannerInner() {
   ]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [sharers, setSharers] = useState<string[]>(trip?.sharedWith || []);
 
   const [form, setForm] = useState({
     origin: "",
@@ -487,6 +490,9 @@ function TripPlannerInner() {
           <button onClick={() => setStep("elicit")} className="rounded-xl glass px-4 py-2.5 text-sm font-semibold hover:bg-white/10">
             Edit Plan
           </button>
+          {trip && (
+            <ShareTripModal tripId={trip.id} />
+          )}
         </div>
       </div>
 
@@ -647,7 +653,7 @@ function TripPlannerInner() {
               </>
             )}
           </div>
-          <div className="glass rounded-2xl p-4 text-xs text-zinc-400">
+<div className="glass rounded-2xl p-4 text-xs text-zinc-400">
             📌 Drag days to reorder · Use <span className="text-sky-300">Swap</span> for weather-aware alternates · Save to persist in Supabase.
           </div>
         </div>
@@ -655,7 +661,6 @@ function TripPlannerInner() {
     </div>
   );
 }
-
 export function TripPlanner() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-zinc-400">Loading planner…</div>}>

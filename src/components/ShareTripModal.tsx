@@ -7,10 +7,10 @@ import { User, Mail, LogOut } from "lucide-react";
 
 export function ShareTripModal({ tripId }: { tripId: string }) {
   const router = useRouter();
+  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [sharers, setSharers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   const addSharer = () => {
     if (!email) return;
